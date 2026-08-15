@@ -1,21 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { useCart } from "@/context/CartContext";
 import {
   ShoppingBag,
-  ArrowRight,
+  Palette,
   ShieldCheck,
   Award,
   Sparkles,
   Headphones,
-  RotateCcw,
   Lock,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, Variants } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 
 const categories = [
   "All",
@@ -31,6 +30,37 @@ const categories = [
   "Morpankh Set",
   "Moti Sets",
   "Mundavalya",
+];
+
+const heroSlides = [
+  {
+    id: 1,
+    image: "/hero-floral-dohale.jpg",
+    alt: "Custom Dohale Jevan Floral Jewellery Set",
+    tagline: "BRIDAL & BABY SHOWER SPECIAL",
+    title: "Dohale Jevan Floral Sets",
+  },
+  {
+    id: 2,
+    image: "/hero-pearl-bangles.jpg",
+    alt: "Traditional Handcrafted Pearl Studded Bangles",
+    tagline: "TIMELESS MAHARASHTRIAN HERITAGE",
+    title: "Classic Royal Moti Bangles",
+  },
+  {
+    id: 3,
+    image: "/hero-red-lotus.jpg",
+    alt: "Red Meenakari Lotus Invisible Necklace Set",
+    tagline: "TRAINDING INVISIBLE NECKLACE",
+    title: "Lotus Invisible Wire Sets",
+  },
+  {
+    id: 4,
+    image: "/hero-jewelry.jpg",
+    alt: "Handcrafted Emerald Pearl Nath",
+    tagline: "SIGNATURE BRIDAL NATH",
+    title: "Royal Emerald Pearl Nath",
+  },
 ];
 
 const productsData = [
@@ -66,31 +96,43 @@ const productsData = [
   },
   {
     id: "inv-4",
-    name: "Meenakari Lotus Invisible Necklace",
+    name: "Red Meenakari Lotus Invisible Set",
     category: "Invisible Necklace with Earrings",
     price: 130,
     material: "Hand-painted Enamel & Pearls",
     tag: "New Arrival",
-    image: "/products/lotus-invisible-necklace.jpeg",
-    description: "Exquisite blue and green Meenakari lotus pendant.",
+    image: "/hero-red-lotus.jpg",
+    description: "Exquisite red and green Meenakari lotus pendant with matching floral ear pins.",
   },
   {
     id: "fl-1",
-    name: "Bridal Haldi Floral Jewellery Set (Rental)",
+    name: "Custom Orchid Baby Shower Dohale Floral Set",
     category: "Artificial Flower Jewellery on Rent",
-    price: 800,
-    material: "Artificial Flowers & Pearls",
+    price: 1200,
+    material: "Royal Blue Orchids & Pearls",
     tag: "On Rent",
-    description: "Vibrant yellow and pink artificial floral set available for Haldi and Mehendi functions on rent.",
+    image: "/hero-floral-dohale.jpg",
+    description: "Complete royal blue orchid floral jewellery set featuring custom Aai-Baba earrings.",
   },
   {
-    id: "fl-2",
-    name: "Fresh Jasmine & Rose Bridal Flower Set",
-    category: "Original Flower Jewellery",
-    price: 2500,
-    material: "Fresh Natural Flowers",
-    tag: "Freshly Made",
-    description: "Custom handcrafted fresh floral jewelry made to order for wedding ceremonies.",
+    id: "bg-1",
+    name: "Handcrafted Double-Row Pearl Bangles",
+    category: "Bangles",
+    price: 850,
+    material: "Freshwater Pearls & Gold Polish",
+    tag: "Bestseller",
+    image: "/hero-pearl-bangles.jpg",
+    description: "Delicate double-row pearl studded traditional kada bangles set.",
+  },
+  {
+    id: "nth-1",
+    name: "Maharashtrian Royal Emerald Pearl Nath",
+    category: "Nath",
+    price: 650,
+    material: "Freshwater Pearls & Emerald Stone",
+    tag: "Traditional",
+    image: "/hero-jewelry.jpg",
+    description: "Classic Marathi nose ring embellished with emerald teardrop stone and pearl cluster.",
   },
   {
     id: "ec-1",
@@ -107,26 +149,8 @@ const productsData = [
     category: "Necklace",
     price: 4500,
     material: "24K Gold Plated",
-    tag: "Bestseller",
+    tag: "Heritage",
     description: "Handcrafted Kundan necklace adorned with fine pearls and traditional stonework.",
-  },
-  {
-    id: "bg-1",
-    name: "Traditional Velvet Pearl Bangles Set",
-    category: "Bangles",
-    price: 1350,
-    material: "Glass Bangles & Kundan",
-    tag: "Festive",
-    description: "Exquisite bridal bangles set adorned with velvet textures and kundan highlights.",
-  },
-  {
-    id: "nth-1",
-    name: "Maharashtrian Royal Pearl Nath",
-    category: "Nath",
-    price: 650,
-    material: "Freshwater Pearls & Ruby",
-    tag: "Traditional",
-    description: "Classic Marathi nose ring embellished with pink stones and pearl cluster.",
   },
   {
     id: "rp-1",
@@ -192,9 +216,41 @@ const cardVariants: Variants = {
   },
 };
 
+const slideVariants: Variants = {
+  initial: {
+    x: "100%",
+    opacity: 0,
+  },
+  animate: {
+    x: 0,
+    opacity: 1,
+    transition: {
+      x: { type: "spring", stiffness: 240, damping: 28 },
+      opacity: { duration: 0.4 },
+    },
+  },
+  exit: {
+    x: "-100%",
+    opacity: 0,
+    transition: {
+      x: { ease: "easeInOut", duration: 0.5 },
+      opacity: { duration: 0.3 },
+    },
+  },
+};
+
 export default function Home() {
   const { addToCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Auto-slide every 3 seconds right-to-left
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
 
   const filteredProducts =
     selectedCategory === "All"
@@ -206,18 +262,18 @@ export default function Home() {
       {/* 1. Top Announcement Bar */}
       <div className="bg-[#072428] text-amber-300 text-[11px] py-2 px-4 text-center tracking-widest uppercase flex justify-between items-center max-w-full border-b border-amber-500/20 font-sans">
         <span>✨ Handcrafted Artisanal Jewellery | Free Shipping On All Orders</span>
-        <span className="hidden md:inline">+91 98765 43210 | contact@arcreationns.com</span>
+        <span className="hidden md:inline">+91 8208125340 | contact: @ar_creationns</span>
       </div>
 
       <Navbar />
 
-      {/* 2. Main Hero Banner Section */}
-      <section className="relative bg-gradient-to-r from-[#f7f4ef] via-[#fcfbfa] to-[#f4efe8] py-16 lg:py-24 px-4 sm:px-6 lg:px-8 border-b border-stone-200">
+      {/* 2. Main Hero Banner Section with 3-Second Carousel */}
+      <section className="relative bg-gradient-to-r from-[#f7f4ef] via-[#fcfbfa] to-[#f4efe8] py-16 lg:py-24 px-4 sm:px-6 lg:px-8 border-b border-stone-200 overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           {/* Left Text Content */}
           <div className="space-y-6 text-left">
             <p className="text-amber-800 text-xs font-sans font-semibold tracking-[0.25em] uppercase">
-              TIMELESS BEAUTY, PRECIOUS YOU
+              {heroSlides[currentSlide].tagline}
             </p>
 
             <h1 className="text-4xl sm:text-6xl font-serif font-bold text-[#072428] leading-tight">
@@ -235,7 +291,7 @@ export default function Home() {
                 className="inline-flex items-center space-x-3 px-8 py-3.5 bg-[#072428] text-amber-300 font-sans text-xs tracking-widest uppercase font-semibold rounded hover:bg-[#092b31] transition-all shadow-md"
               >
                 <span>EXPLORE COLLECTION</span>
-                <ArrowRight className="w-4 h-4" />
+                <Palette className="w-4 h-4" />
               </a>
             </div>
 
@@ -246,7 +302,7 @@ export default function Home() {
                 <span>Certified Jewels</span>
               </div>
               <div className="flex items-center space-x-2">
-                <RotateCcw className="w-4 h-4 text-amber-700" />
+                <Palette className="w-4 h-4 text-amber-700" />
                 <span>Customisation Available</span>
               </div>
               <div className="flex items-center space-x-2">
@@ -256,18 +312,45 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right Hero Image */}
-          <div className="relative aspect-[4/5] max-w-md mx-auto w-full group">
-            <div className="absolute -inset-2 bg-amber-200/40 rounded-3xl blur-xl transition-all group-hover:bg-amber-300/50" />
-            <div className="relative w-full h-full rounded-3xl overflow-hidden shadow-2xl border-2 border-amber-500/20 bg-stone-100">
-              <Image
-                src="/hero-jewelry.jpg"
-                alt="Handcrafted Emerald Pearl Nath"
-                fill
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#f7f4ef]/30 via-transparent to-[#f7f4ef]/20 pointer-events-none" />
+          {/* Right Hero Image Carousel */}
+          <div className="flex flex-col items-center">
+            <div className="relative aspect-[4/5] max-w-md w-full rounded-3xl overflow-hidden shadow-2xl border-2 border-amber-500/20 bg-stone-100">
+              <AnimatePresence initial={false} mode="popLayout">
+                <motion.div
+                  key={currentSlide}
+                  variants={slideVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  className="relative w-full h-full"
+                >
+                  <Image
+                    src={heroSlides[currentSlide].image}
+                    alt={heroSlides[currentSlide].alt}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                  {/* Subtle edge overlay blending with background */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#f7f4ef]/30 via-transparent to-[#f7f4ef]/20 pointer-events-none" />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* Slide Navigation Indicator Dots */}
+            <div className="flex space-x-2.5 mt-5">
+              {heroSlides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={`h-2 transition-all rounded-full ${
+                    currentSlide === idx
+                      ? "w-6 bg-[#072428]"
+                      : "w-2 bg-stone-300 hover:bg-stone-400"
+                  }`}
+                  aria-label={`Slide ${idx + 1}`}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -282,9 +365,9 @@ export default function Home() {
             <span className="text-[10px] text-emerald-100/60">Traditional Artisans</span>
           </div>
           <div className="flex flex-col items-center space-y-1">
-            <RotateCcw className="w-6 h-6 text-amber-400" />
-            <span className="font-semibold text-white">Quality Assured</span>
-            <span className="text-[10px] text-emerald-100/60">Inspected Products</span>
+            <Palette className="w-6 h-6 text-amber-400" />
+            <span className="font-semibold text-white">Custom Designs</span>
+            <span className="text-[10px] text-emerald-100/60">Tailored to You</span>
           </div>
           <div className="flex flex-col items-center space-y-1">
             <Lock className="w-6 h-6 text-amber-400" />
@@ -323,7 +406,7 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Bestsellers Product Grid */}
+        {/* Product Grid */}
         <motion.div
           key={selectedCategory}
           variants={containerVariants}
