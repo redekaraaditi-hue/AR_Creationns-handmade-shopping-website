@@ -11,6 +11,7 @@ import {
   Sparkles,
   Headphones,
   Lock,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -51,7 +52,7 @@ const heroSlides = [
     id: 3,
     image: "/hero-red-lotus.jpg",
     alt: "Red Meenakari Lotus Invisible Necklace Set",
-    tagline: "TRAINDING INVISIBLE NECKLACE",
+    tagline: "TRENDING INVISIBLE NECKLACE",
     title: "Lotus Invisible Wire Sets",
   },
   {
@@ -261,7 +262,7 @@ export default function Home() {
     <main className="min-h-screen bg-[#fcfbfa] text-[#072428] overflow-x-hidden font-serif">
       {/* 1. Top Announcement Bar */}
       <div className="bg-[#072428] text-amber-300 text-[11px] py-2 px-4 text-center tracking-widest uppercase flex justify-between items-center max-w-full border-b border-amber-500/20 font-sans">
-        <span>✨ Handcrafted Artisanal Jewellery | Free Shipping On All Orders</span>
+        <span>✨ Handcrafted Artisanal Jewellery</span>
         <span className="hidden md:inline">+91 8208125340 | contact: @ar_creationns</span>
       </div>
 
@@ -331,7 +332,6 @@ export default function Home() {
                     className="object-cover"
                     priority
                   />
-                  {/* Subtle edge overlay blending with background */}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#f7f4ef]/30 via-transparent to-[#f7f4ef]/20 pointer-events-none" />
                 </motion.div>
               </AnimatePresence>
@@ -388,23 +388,22 @@ export default function Home() {
           <p className="text-amber-800 text-[10px] font-sans font-bold tracking-[0.2em] uppercase">SHOP BY CATEGORY</p>
           <h2 className="text-3xl font-serif font-bold text-[#072428]">Explore Our Collections</h2>
         </div>
-
-        {/* Category Pills */}
-        <div className="flex flex-wrap justify-center gap-2 pt-2 pb-6 max-w-6xl mx-auto font-sans">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-full text-xs tracking-wide transition-all border ${
-                selectedCategory === cat
-                  ? "bg-[#072428] text-amber-300 font-semibold border-[#072428] shadow"
-                  : "bg-white text-stone-700 border-stone-200 hover:border-amber-700"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+{/* Category Pills - Increased Size */}
+<div className="flex flex-wrap justify-center gap-3 pt-4 pb-8 max-w-6xl mx-auto font-sans">
+  {categories.map((cat) => (
+    <button
+      key={cat}
+      onClick={() => setSelectedCategory(cat)}
+      className={`px-6 py-3 rounded-full text-sm font-medium tracking-wide transition-all border shadow-sm ${
+        selectedCategory === cat
+          ? "bg-[#072428] text-amber-300 font-semibold border-[#072428] shadow-md scale-105"
+          : "bg-white text-stone-700 border-stone-300 hover:border-amber-700 hover:text-amber-800"
+      }`}
+    >
+      {cat}
+    </button>
+  ))}
+</div>
 
         {/* Product Grid */}
         <motion.div
@@ -472,32 +471,127 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* 5. Promotional Offer Banner */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-[#072428] text-white rounded-2xl p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between border border-amber-500/20 shadow-xl relative overflow-hidden">
-          <div className="space-y-3 text-center md:text-left z-10">
-            <span className="text-amber-300 text-xs font-sans font-bold tracking-widest uppercase">LIMITED TIME OFFER</span>
-            <h3 className="text-3xl sm:text-4xl font-serif font-bold">Shine More, Save More</h3>
-            <p className="text-emerald-100/80 text-sm font-sans max-w-md">Get flat 20% off on complete bridal and festive collections.</p>
-            <div className="pt-2">
-              <a
-                href="#products"
-                className="inline-block px-6 py-3 bg-amber-500 text-[#072428] text-xs font-sans font-bold uppercase tracking-wider rounded hover:bg-amber-400 transition-colors"
-              >
-                SHOP NOW →
-              </a>
+      {/* 5. About Us Section */}
+      <section id="about" className="py-20 bg-gradient-to-b from-[#fcfbfa] to-[#f4efe8] border-y border-stone-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div className="relative aspect-square max-w-md mx-auto w-full rounded-3xl overflow-hidden shadow-2xl border-2 border-amber-500/20">
+              <Image
+                src="/AR_Creationns logo.jpeg"
+                alt="AR Creationns Story"
+                fill
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-[#072428]/20" />
             </div>
-          </div>
 
-          <div className="mt-6 md:mt-0 text-center z-10">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-dashed border-amber-400 flex items-center justify-center p-2 mx-auto">
-              <span className="text-2xl font-serif font-bold text-amber-300">20% <br/><span className="text-xs uppercase font-sans">OFF</span></span>
+            <div className="space-y-5 text-left">
+              <p className="text-amber-800 text-xs font-sans font-semibold tracking-[0.25em] uppercase">
+                OUR HERITAGE & PASSION
+              </p>
+              <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#072428]">
+                Every Piece Tells A Story of Elegance
+              </h2>
+              <p className="text-stone-600 text-sm font-sans leading-relaxed">
+                Founded by Aaditi, <span className="font-semibold text-[#072428]">AR Creationns</span> brings together time-honored Indian traditions and modern aesthetics. From delicate pearl invisible necklaces and handmade Meenakari craft to bespoke floral bridal and baby shower sets, each creation is crafted with meticulous attention to detail.
+              </p>
+              <p className="text-stone-600 text-sm font-sans leading-relaxed">
+                We believe luxury should be personal and accessible. Whether you seek custom wedding ornaments or bridal rental sets, we curate timeless beauty tailored uniquely for you.
+              </p>
+              
+              <div className="pt-2 flex items-center space-x-6 font-sans">
+                <div>
+                  <p className="text-2xl font-serif font-bold text-[#072428]">500+</p>
+                  <p className="text-xs text-stone-500 uppercase tracking-wider">Custom Orders</p>
+                </div>
+                <div className="h-8 w-px bg-stone-300" />
+                <div>
+                  <p className="text-2xl font-serif font-bold text-[#072428]">100%</p>
+                  <p className="text-xs text-stone-500 uppercase tracking-wider">Handmade Craft</p>
+                </div>
+                <div className="h-8 w-px bg-stone-300" />
+                <div>
+                  <p className="text-2xl font-serif font-bold text-[#072428]">4.9★</p>
+                  <p className="text-xs text-stone-500 uppercase tracking-wider">Customer Rating</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
+      {/* 6. Customer Reviews Section */}
+      <section id="reviews" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <div className="text-center space-y-2">
+          <p className="text-amber-800 text-[10px] font-sans font-bold tracking-[0.2em] uppercase">
+            TESTIMONIALS
+          </p>
+          <h2 className="text-3xl font-serif font-bold text-[#072428]">
+            Loved By Our Customers
+          </h2>
+          <p className="text-stone-600 text-sm font-sans max-w-md mx-auto">
+            Real feedback from brides and jewelry lovers who chose AR Creationns for their special occasions.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-sans">
+          {/* Review 1 */}
+          <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="flex space-x-1 text-amber-500">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-stone-700 text-xs leading-relaxed italic font-serif">
+                "The invisible necklace and earrings set was incredibly lightweight and subtle. It looks floating on the neck and received so many compliments!"
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-xs text-[#072428]">Pooja Deshmukh</p>
+              <p className="text-[11px] text-stone-400">Pune, Maharashtra</p>
+            </div>
+          </div>
+
+          {/* Review 2 */}
+          <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="flex space-x-1 text-amber-500">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-stone-700 text-xs leading-relaxed italic font-serif">
+                "Ordered the Dohale Jevan baby shower orchid floral jewelry with personalized Aai-Baba earrings. The craft was flawless and arrived right on time."
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-xs text-[#072428]">Snehal Kulkarni</p>
+              <p className="text-[11px] text-stone-400">Mumbai, Maharashtra</p>
+            </div>
+          </div>
+
+          {/* Review 3 */}
+          <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="flex space-x-1 text-amber-500">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-stone-700 text-xs leading-relaxed italic font-serif">
+                "The pearl nath with the emerald stone is authentic Maharashtrian beauty. Perfect finishing and super comfortable clip-on fit."
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-xs text-[#072428]">Ankita Patil</p>
+              <p className="text-[11px] text-stone-400">Kolhapur, Maharashtra</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. Footer */}
       <footer className="bg-[#04191c] text-emerald-200/60 py-12 border-t border-amber-500/20 text-center text-sm space-y-3 font-sans">
         <p className="text-white font-serif text-lg font-bold tracking-widest uppercase">
           AR CREATIONNS
