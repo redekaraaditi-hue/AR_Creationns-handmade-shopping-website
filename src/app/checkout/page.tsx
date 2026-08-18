@@ -1,44 +1,54 @@
 "use client";
 
 import { useState } from "react";
-import Navbar from "@/components/Navbar";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import Navbar from "@/components/Navbar";
 import Link from "next/link";
-import Image from "next/image";
 import {
-  Trash2,
-  ArrowLeft,
-  ShoppingBag,
-  ShieldCheck,
   Truck,
-  MessageCircle,
+  ShieldCheck,
   CheckCircle2,
+  Lock,
+  ArrowLeft,
+  Sparkles,
 } from "lucide-react";
 
 export default function CheckoutPage() {
-  const { cart, removeFromCart, updateQuantity, clearCart } = useCart();
+  const router = useRouter();
+  const { cart, clearCart } = useCart();
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [orderSuccess, setOrderSuccess] = useState<any>(null);
 
   const [formData, setFormData] = useState({
-    fullName: "",
+    customerName: "",
     phone: "",
-    email: "",
     address: "",
     city: "",
     pincode: "",
     notes: "",
-    paymentMethod: "cod", // 'cod' or 'upi'
+    paymentMethod: "cod",
   });
 
-  const [isOrdered, setIsOrdered] = useState(false);
-
+  // Calculate Cart Subtotal
   const subtotal = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (total, item) => total + item.price * (item.quantity || 1),
     0
   );
-  const shippingFee = subtotal >= 1000 || subtotal === 0 ? 0 : 70;
-  const grandTotal = subtotal + shippingFee;
 
-  const handleInputChange = (
+  // Free shipping threshold logic
+  const FREE_SHIPPING_THRESHOLD = 1000;
+  const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+  const shippingCost = subtotal === 0 ? 0 : isFreeShipping ? 0 : 80;
+  const amountNeededForFreeShipping = Math.max(
+    0,
+    FREE_SHIPPING_THRESHOLD - subtotal
+  );
+  const totalAmount = subtotal + shippingCost;
+
+  const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
@@ -46,388 +56,386 @@ export default function CheckoutPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (cart.length === 0) {
-      alert("Your cart is empty! Please add some jewellery items first.");
+      setError("Your cart is empty. Please add items before checking out.");
       return;
     }
 
-    // Format WhatsApp summary
-    const itemsList = cart
-      .map(
-        (item, idx) =>
-          `${idx + 1}. *${item.name}* x ${item.quantity} = ₹${(
-            item.price * item.quantity
-          ).toLocaleString("en-IN")}`
-      )
-      .join("\n");
+    setLoading(true);
+    setError(null);
 
-    const orderText = `✨ *NEW ORDER - AR CREATIONNS* ✨
---------------------------------
-🛍️ *Customer Details:*
-• Name: ${formData.fullName}
-• Phone: ${formData.phone}
-• Address: ${formData.address}, ${formData.city} - ${formData.pincode}
-${formData.notes ? `• Customization Note: ${formData.notes}\n` : ""}
---------------------------------
-📦 *Ordered Items:*
-${itemsList}
+    const payload = {
+      ...formData,
+      items: cart.map((item) => ({
+        productId: item.id,
+        quantity: item.quantity || 1,
+        price: item.price,
+      })),
+    };
 
---------------------------------
-💰 *Subtotal:* ₹${subtotal.toLocaleString("en-IN")}
-🚚 *Shipping:* ${shippingFee === 0 ? "FREE" : `₹${shippingFee}`}
-🌟 *Grand Total:* ₹${grandTotal.toLocaleString("en-IN")}
-💳 *Payment Mode:* ${
-      formData.paymentMethod === "cod"
-        ? "Cash on Delivery"
-        : "UPI / Online Payment"
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to place order");
+      }
+
+      setOrderSuccess(data.order);
+      if (clearCart) clearCart();
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred.");
+    } finally {
+      setLoading(false);
     }
---------------------------------
-Please confirm my order!`;
-
-    const encodedMessage = encodeURIComponent(orderText);
-    const whatsappUrl = `https://wa.me/918208125340?text=${encodedMessage}`;
-
-    window.open(whatsappUrl, "_blank");
-    setIsOrdered(true);
-    if (clearCart) clearCart();
   };
 
+  if (orderSuccess) {
+    return (
+      <main className="min-h-screen bg-[#fcfbfa] text-[#072428] font-sans">
+        <Navbar />
+        <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
+          <div className="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
+          <h1 className="text-3xl font-serif font-bold text-[#072428]">
+            Order Confirmed!
+          </h1>
+          <p className="text-stone-600 text-sm">
+            Thank you for shopping with AR Creationns. Your order number is:
+          </p>
+          <div className="inline-block bg-white border border-stone-200 px-6 py-3 rounded-xl font-mono font-bold text-[#072428] text-lg shadow-sm">
+            {orderSuccess.orderNumber}
+          </div>
+          <p className="text-xs text-stone-500 max-w-md mx-auto">
+            We will contact you shortly on <b>{orderSuccess.phone}</b> to
+            confirm dispatch details.
+          </p>
+          <div className="pt-6">
+            <Link
+              href="/"
+              className="inline-flex items-center space-x-2 px-8 py-3 bg-[#072428] text-amber-300 text-xs font-semibold tracking-wider uppercase rounded hover:bg-[#092b31] transition-all"
+            >
+              <span>CONTINUE SHOPPING</span>
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#fcfbfa] text-[#072428] font-serif">
+    <main className="min-h-screen bg-[#fcfbfa] text-[#072428] font-sans">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Top Header */}
-        <div className="flex items-center justify-between mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mb-8">
           <Link
-            href="/#products"
-            className="inline-flex items-center space-x-2 text-xs font-sans text-stone-600 hover:text-[#072428] uppercase tracking-wider transition-colors"
+            href="/"
+            className="inline-flex items-center text-xs text-stone-500 hover:text-[#072428] transition-colors mb-2 space-x-1"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Continue Shopping</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Store</span>
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-bold font-serif text-[#072428]">
-            Checkout & Order
+          <h1 className="text-3xl font-serif font-bold text-[#072428]">
+            Checkout & Shipping
           </h1>
         </div>
 
-        {isOrdered ? (
-          /* Order Confirmation Screen */
-          <div className="bg-white rounded-3xl p-8 sm:p-12 border border-stone-200 text-center max-w-lg mx-auto shadow-sm space-y-5 font-sans">
-            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-10 h-10" />
+        {error && (
+          <div className="p-4 mb-8 text-sm text-red-800 bg-red-50 border border-red-200 rounded-xl">
+            {error}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* Left Column: Shipping Form */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* Free Shipping Banner */}
+            <div
+              className={`p-4 rounded-xl border flex items-center space-x-3 text-xs ${
+                isFreeShipping
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                  : "bg-amber-50 border-amber-200 text-amber-900"
+              }`}
+            >
+              <Truck className="w-5 h-5 flex-shrink-0 text-amber-700" />
+              <div>
+                {isFreeShipping ? (
+                  <span className="font-semibold">
+                    🎉 You have unlocked Free Express Shipping!
+                  </span>
+                ) : (
+                  <span>
+                    Add <b>₹{amountNeededForFreeShipping}</b> more to unlock{" "}
+                    <b>Free Express Shipping on Orders Above ₹1,000</b>!
+                  </span>
+                )}
+              </div>
             </div>
-            <h2 className="text-2xl font-serif font-bold text-[#072428]">
-              Order Placed Successfully!
-            </h2>
-            <p className="text-xs text-stone-600 leading-relaxed">
-              Your order details have been forwarded to **AR Creationns** on WhatsApp. We will get in touch with you shortly to confirm processing and delivery.
-            </p>
-            <Link
-              href="/"
-              className="inline-block px-8 py-3.5 bg-[#072428] text-amber-300 text-xs font-semibold rounded-xl uppercase tracking-wider hover:bg-[#092b31] transition-all"
+
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white p-6 sm:p-8 rounded-2xl border border-stone-200 shadow-sm space-y-5"
             >
-              Back to Home
-            </Link>
-          </div>
-        ) : cart.length === 0 ? (
-          /* Empty Cart Screen */
-          <div className="bg-white rounded-3xl p-12 border border-stone-200 text-center max-w-md mx-auto shadow-sm space-y-4 font-sans">
-            <ShoppingBag className="w-12 h-12 text-stone-300 mx-auto" />
-            <h2 className="text-lg font-serif font-bold text-stone-800">
-              Your Shopping Bag is Empty
-            </h2>
-            <p className="text-xs text-stone-500">
-              Explore our handcrafted collections and add your favourite pieces to your bag.
-            </p>
-            <Link
-              href="/#products"
-              className="inline-block px-6 py-3 bg-[#072428] text-amber-300 text-xs font-semibold rounded-xl uppercase tracking-wider hover:bg-[#092b31]"
-            >
-              Explore Collections
-            </Link>
-          </div>
-        ) : (
-          /* Checkout Layout */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-            {/* Left: Shipping Form */}
-            <div className="lg:col-span-7 bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm font-sans space-y-6">
-              <div className="border-b border-stone-100 pb-4">
-                <h2 className="text-lg font-serif font-bold text-[#072428]">
-                  Shipping Address
-                </h2>
-                <p className="text-xs text-stone-500 mt-0.5">
-                  Enter your delivery destination details.
-                </p>
+              <h2 className="font-serif font-bold text-lg text-[#072428] border-b border-stone-100 pb-3">
+                1. Delivery Details
+              </h2>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                  Full Name *
+                </label>
+                <input
+                  required
+                  type="text"
+                  name="customerName"
+                  value={formData.customerName}
+                  onChange={handleChange}
+                  placeholder="e.g. Pooja Deshmukh"
+                  className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#072428]"
+                />
               </div>
 
-              <form onSubmit={handlePlaceOrder} className="space-y-4 text-xs font-sans">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-semibold text-stone-700 mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      required
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      placeholder="e.g. Pooja Deshmukh"
-                      className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-[#072428] focus:bg-white transition-colors font-sans text-xs placeholder:font-sans text-stone-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-stone-700 mb-1">
-                      WhatsApp / Mobile No *
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      required
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      placeholder="e.g. 9823011223"
-                      className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-[#072428] focus:bg-white transition-colors font-sans text-xs tabular-nums placeholder:font-sans placeholder:tabular-nums text-stone-800"
-                    />
-                  </div>
-                </div>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold text-stone-700 mb-1">
-                    Street Address & Landmark *
-                  </label>
-                  <textarea
-                    rows={2}
-                    name="address"
-                    required
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    placeholder="House No, Apartment, Road, Landmark..."
-                    className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-[#072428] focus:bg-white transition-colors font-sans text-xs tabular-nums placeholder:font-sans placeholder:tabular-nums text-stone-800"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-semibold text-stone-700 mb-1">
-                      City / Town *
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      required
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      placeholder="e.g. Pune / Kolhapur"
-                      className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-[#072428] focus:bg-white transition-colors font-sans text-xs placeholder:font-sans text-stone-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-stone-700 mb-1">
-                      Postal Code / PIN *
-                    </label>
-                    <input
-                      type="text"
-                      name="pincode"
-                      required
-                      value={formData.pincode}
-                      onChange={handleInputChange}
-                      placeholder="e.g. 411001"
-                      className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-[#072428] focus:bg-white transition-colors font-sans text-xs tabular-nums placeholder:font-sans placeholder:tabular-nums text-stone-800"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-stone-700 mb-1">
-                    Customization / Special Requests (Optional)
+                  <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                    Phone Number (WhatsApp) *
                   </label>
                   <input
-                    type="text"
-                    name="notes"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Specific name tag, wrist size, color alteration..."
-                    className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-[#072428] focus:bg-white transition-colors font-sans text-xs placeholder:font-sans text-stone-800"
+                    required
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="+91 98765 43210"
+                    className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#072428]"
                   />
                 </div>
-
-                {/* Payment Selection */}
-                <div className="pt-2">
-                  <label className="block font-semibold text-stone-700 mb-2">
-                    Payment Option
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                    Pincode *
                   </label>
-                  <div className="grid grid-cols-2 gap-3 font-sans">
-                    <label
-                      className={`flex items-center space-x-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                        formData.paymentMethod === "cod"
-                          ? "border-[#072428] bg-emerald-50/50 text-[#072428] font-bold"
-                          : "border-stone-200 text-stone-600"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="cod"
-                        checked={formData.paymentMethod === "cod"}
-                        onChange={handleInputChange}
-                        className="text-[#072428] focus:ring-0"
-                      />
-                      <span>Cash on Delivery</span>
-                    </label>
-
-                    <label
-                      className={`flex items-center space-x-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                        formData.paymentMethod === "upi"
-                          ? "border-[#072428] bg-emerald-50/50 text-[#072428] font-bold"
-                          : "border-stone-200 text-stone-600"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="upi"
-                        checked={formData.paymentMethod === "upi"}
-                        onChange={handleInputChange}
-                        className="text-[#072428] focus:ring-0"
-                      />
-                      <span>UPI / GPay / PhonePe</span>
-                    </label>
-                  </div>
+                  <input
+                    required
+                    type="text"
+                    name="pincode"
+                    value={formData.pincode}
+                    onChange={handleChange}
+                    placeholder="416001"
+                    className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#072428]"
+                  />
                 </div>
+              </div>
 
-                <button
-                  type="submit"
-                  className="w-full mt-4 py-4 bg-[#072428] text-amber-300 hover:bg-[#092b31] rounded-2xl text-xs font-semibold uppercase tracking-widest flex items-center justify-center space-x-2 shadow-lg transition-all font-sans"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Confirm Order via WhatsApp</span>
-                </button>
-              </form>
-            </div>
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                  Complete Address (House No, Street, Landmark) *
+                </label>
+                <textarea
+                  required
+                  name="address"
+                  rows={2}
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Flat No 204, Royal Palms, Near Shivaji Chowk"
+                  className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#072428]"
+                />
+              </div>
 
-            {/* Right: Order Summary */}
-            <div className="lg:col-span-5 space-y-6 font-sans">
-              <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
-                <h3 className="text-base font-serif font-bold text-[#072428] border-b border-stone-100 pb-3">
-                  Order Summary ({cart.length} items)
-                </h3>
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                  City / District *
+                </label>
+                <input
+                  required
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="Kolhapur / Pune / Mumbai"
+                  className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#072428]"
+                />
+              </div>
 
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1.5">
+                  Order Notes / Customization Request (Optional)
+                </label>
+                <textarea
+                  name="notes"
+                  rows={2}
+                  value={formData.notes}
+                  onChange={handleChange}
+                  placeholder="Custom name tag for earrings, urgent delivery date, etc."
+                  className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#072428]"
+                />
+              </div>
+
+              <h2 className="font-serif font-bold text-lg text-[#072428] border-t border-stone-100 pt-5">
+                2. Payment Method
+              </h2>
+
+              <div className="space-y-3">
+                <label className="flex items-center justify-between p-3.5 border rounded-xl cursor-pointer hover:bg-stone-50 transition-colors">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="cod"
+                      checked={formData.paymentMethod === "cod"}
+                      onChange={handleChange}
+                      className="accent-[#072428]"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-[#072428]">
+                        Cash on Delivery (COD)
+                      </p>
+                      <p className="text-xs text-stone-500">
+                        Pay in cash upon receiving your order
+                      </p>
+                    </div>
+                  </div>
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                </label>
+
+                <label className="flex items-center justify-between p-3.5 border rounded-xl cursor-pointer hover:bg-stone-50 transition-colors">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="online"
+                      checked={formData.paymentMethod === "online"}
+                      onChange={handleChange}
+                      className="accent-[#072428]"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-[#072428]">
+                        UPI / QR Code / Net Banking
+                      </p>
+                      <p className="text-xs text-stone-500">
+                        Instant payment via PhonePe, GPay, Paytm
+                      </p>
+                    </div>
+                  </div>
+                  <Lock className="w-5 h-5 text-amber-700" />
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || cart.length === 0}
+                className="w-full py-4 bg-[#072428] text-amber-300 text-xs font-semibold rounded-xl hover:bg-[#092b31] transition-all flex items-center justify-center space-x-2 uppercase tracking-widest disabled:opacity-50 shadow-md mt-6"
+              >
+                <Lock className="w-4 h-4" />
+                <span>
+                  {loading
+                    ? "PLACING ORDER..."
+                    : `CONFIRM ORDER • ₹${totalAmount.toLocaleString("en-IN")}`}
+                </span>
+              </button>
+            </form>
+          </div>
+
+          {/* Right Column: Order Summary */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-stone-200 shadow-sm space-y-6">
+              <h2 className="font-serif font-bold text-lg text-[#072428] border-b border-stone-100 pb-3">
+                Order Summary ({cart.length} item{cart.length === 1 ? "" : "s"})
+              </h2>
+
+              {cart.length === 0 ? (
+                <div className="text-center py-8 text-stone-500 text-sm">
+                  Your cart is empty.
+                </div>
+              ) : (
                 <div className="divide-y divide-stone-100 max-h-80 overflow-y-auto pr-1">
                   {cart.map((item) => (
                     <div
                       key={item.id}
-                      className="py-3 flex items-center justify-between gap-3 text-xs font-sans"
+                      className="py-3 flex items-center space-x-4"
                     >
-                      <div className="w-12 h-12 relative rounded-lg overflow-hidden bg-stone-100 flex-shrink-0 border">
-                        {item.image ? (
-                          <Image
-                            src={item.image}
-                            alt={item.name}
-                            fill
-                            className="object-cover"
+                      <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-stone-100 flex-shrink-0 border border-stone-200">
+                        {(item as any).image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={(item as any).image}
+                            alt={item.name || "Product"}
+                            className="w-full h-full object-cover"
                           />
                         ) : (
-                          <ShoppingBag className="w-5 h-5 text-stone-400 m-auto mt-3.5" />
+                          <div className="w-full h-full flex items-center justify-center text-[9px] text-stone-400">
+                            No Img
+                          </div>
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-stone-800 truncate font-serif">
+                        <h3 className="text-xs font-semibold text-[#072428] truncate">
                           {item.name}
+                        </h3>
+                        <p className="text-[11px] text-stone-500">
+                          Qty: {item.quantity || 1}
                         </p>
-                        <p className="text-[11px] text-stone-500 font-sans tabular-nums">
-                          ₹{item.price.toLocaleString("en-IN")} each
-                        </p>
-
-                        <div className="flex items-center space-x-2 mt-1 font-sans">
-                          <button
-                            onClick={() =>
-                              updateQuantity(
-                                item.id,
-                                Math.max(1, item.quantity - 1)
-                              )
-                            }
-                            className="w-5 h-5 bg-stone-100 rounded flex items-center justify-center hover:bg-stone-200 text-stone-700 font-sans tabular-nums"
-                          >
-                            -
-                          </button>
-                          <span className="font-bold text-stone-800 font-sans tabular-nums">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity + 1)
-                            }
-                            className="w-5 h-5 bg-stone-100 rounded flex items-center justify-center hover:bg-stone-200 text-stone-700 font-sans tabular-nums"
-                          >
-                            +
-                          </button>
-                        </div>
                       </div>
-
-                      <div className="text-right">
-                        <p className="font-bold text-[#072428] font-sans tabular-nums">
-                          ₹{(item.price * item.quantity).toLocaleString("en-IN")}
-                        </p>
-                        <button
-                          onClick={() => removeFromCart(item.id)}
-                          className="text-rose-600 hover:text-rose-800 mt-1 inline-block"
-                          title="Remove item"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      <span className="text-xs font-bold text-[#072428]">
+                        ₹
+                        {(
+                          item.price * (item.quantity || 1)
+                        ).toLocaleString("en-IN")}
+                      </span>
                     </div>
                   ))}
                 </div>
+              )}
 
-                <div className="border-t border-stone-100 pt-3 space-y-2 text-xs text-stone-600 font-sans">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span className="font-medium text-stone-900 font-sans tabular-nums">
-                      ₹{subtotal.toLocaleString("en-IN")}
+              {/* Cost Calculations */}
+              <div className="space-y-3 pt-4 border-t border-stone-100 text-sm">
+                <div className="flex justify-between text-stone-600">
+                  <span>Subtotal</span>
+                  <span>₹{subtotal.toLocaleString("en-IN")}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-stone-600">
+                  <span>Delivery Charges</span>
+                  {isFreeShipping ? (
+                    <span className="text-emerald-700 font-semibold text-xs uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded">
+                      FREE EXPRESS SHIPPING
                     </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Shipping Charges</span>
-                    <span>
-                      {shippingFee === 0 ? (
-                        <span className="text-emerald-700 font-semibold uppercase text-[10px] bg-emerald-50 px-2 py-0.5 rounded font-sans">
-                          Free Delivery
-                        </span>
-                      ) : (
-                        <span className="font-sans tabular-nums">₹{shippingFee}</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="border-t border-stone-200 pt-3 flex justify-between text-sm font-bold text-[#072428] font-sans">
-                    <span>Grand Total</span>
-                    <span className="font-sans tabular-nums">₹{grandTotal.toLocaleString("en-IN")}</span>
-                  </div>
+                  ) : (
+                    <span>₹{shippingCost}</span>
+                  )}
+                </div>
+
+                <div className="flex justify-between text-base font-bold text-[#072428] pt-3 border-t border-stone-200">
+                  <span>Total Amount</span>
+                  <span className="text-amber-800">
+                    ₹{totalAmount.toLocaleString("en-IN")}
+                  </span>
                 </div>
               </div>
 
-              <div className="bg-[#072428]/5 border border-[#072428]/10 rounded-2xl p-4 space-y-2 text-[11px] text-stone-600 font-sans">
-                <div className="flex items-center space-x-2 text-[#072428] font-semibold">
-                  <ShieldCheck className="w-4 h-4 text-amber-700" />
-                  <span>100% Secure & Verified Handcraft</span>
-                </div>
-                <div className="flex items-center space-x-2 text-[#072428] font-semibold">
-                  <Truck className="w-4 h-4 text-amber-700" />
+              <div className="pt-2 text-[11px] text-stone-500 space-y-1.5">
+                <p className="flex items-center space-x-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
                   <span>Free Express Shipping on Orders Above ₹1,000</span>
-                </div>
+                </p>
+                <p className="flex items-center space-x-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <span>100% Handcrafted Authenticity Guarantee</span>
+                </p>
               </div>
             </div>
           </div>
-        )}
-      </main>
-    </div>
+        </div>
+      </div>
+    </main>
   );
 }

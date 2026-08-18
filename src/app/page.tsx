@@ -12,10 +12,23 @@ import {
   Headphones,
   Lock,
   Star,
+  Play,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence, Variants } from "framer-motion";
+
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  material: string;
+  tag?: string | null;
+  image: string;
+  description: string;
+  inStock?: boolean;
+}
 
 const categories = [
   "All",
@@ -64,142 +77,6 @@ const heroSlides = [
   },
 ];
 
-const productsData = [
-  {
-    id: "inv-1",
-    name: "Chandra Pearl Invisible Necklace Set",
-    category: "Invisible Necklace with Earrings",
-    price: 120,
-    material: "Gold Finish & Pearls",
-    tag: "Bestseller",
-    image: "/products/chandra-invisible-necklace.jpeg",
-    description: "Crescent chandra design adorned with pearls on an invisible cord.",
-  },
-  {
-    id: "inv-2",
-    name: "Red Peacock Invisible Necklace Set",
-    category: "Invisible Necklace with Earrings",
-    price: 250,
-    material: "Kundan & Red Beads",
-    tag: "Trending",
-    image: "/products/red-peacock-invisible-necklace.jpeg",
-    description: "Ornate gold peacock pendant with ruby-red accents.",
-  },
-  {
-    id: "inv-3",
-    name: "Delicate Silver Invisible Necklace",
-    category: "Invisible Necklace with Earrings",
-    price: 60,
-    material: "Silver Finish Beads",
-    tag: "Minimalist",
-    image: "/products/silver-invisible-necklace.jpeg",
-    description: "Ultra-lightweight invisible double-strand necklace.",
-  },
-  {
-    id: "inv-4",
-    name: "Red Meenakari Lotus Invisible Set",
-    category: "Invisible Necklace with Earrings",
-    price: 130,
-    material: "Hand-painted Enamel & Pearls",
-    tag: "New Arrival",
-    image: "/hero-red-lotus.jpg",
-    description: "Exquisite red and green Meenakari lotus pendant with matching floral ear pins.",
-  },
-  {
-    id: "fl-1",
-    name: "Custom Orchid Baby Shower Dohale Floral Set",
-    category: "Artificial Flower Jewellery on Rent",
-    price: 1200,
-    material: "Royal Blue Orchids & Pearls",
-    tag: "On Rent",
-    image: "/hero-floral-dohale.jpg",
-    description: "Complete royal blue orchid floral jewellery set featuring custom Aai-Baba earrings.",
-  },
-  {
-    id: "bg-1",
-    name: "Handcrafted Double-Row Pearl Bangles",
-    category: "Bangles",
-    price: 850,
-    material: "Freshwater Pearls & Gold Polish",
-    tag: "Bestseller",
-    image: "/hero-pearl-bangles.jpg",
-    description: "Delicate double-row pearl studded traditional kada bangles set.",
-  },
-  {
-    id: "nth-1",
-    name: "Maharashtrian Royal Emerald Pearl Nath",
-    category: "Nath",
-    price: 650,
-    material: "Freshwater Pearls & Emerald Stone",
-    tag: "Traditional",
-    image: "/hero-jewelry.jpg",
-    description: "Classic Marathi nose ring embellished with emerald teardrop stone and pearl cluster.",
-  },
-  {
-    id: "ec-1",
-    name: "Peacock Motif Pearl Earcuffs",
-    category: "Earcuffs",
-    price: 950,
-    material: "Gold Finish & Pearls",
-    tag: "New Arrival",
-    description: "Intricately detailed cuff earrings wrapping smoothly along the ear border.",
-  },
-  {
-    id: "nk-1",
-    name: "Royal Kundan Heritage Choker Necklace",
-    category: "Necklace",
-    price: 4500,
-    material: "24K Gold Plated",
-    tag: "Heritage",
-    description: "Handcrafted Kundan necklace adorned with fine pearls and traditional stonework.",
-  },
-  {
-    id: "rp-1",
-    name: "Velvet Royal Floral Engagement Ring Platter",
-    category: "Ring Platter",
-    price: 1800,
-    material: "Wood, Velvet & Acrylic",
-    tag: "Customizable",
-    description: "Elegant handcrafted ring tray customized for engagement ceremonies.",
-  },
-  {
-    id: "kw-1",
-    name: "Handmade Kashmiri Papier-Mâché Watch",
-    category: "Kashmiri Watch",
-    price: 2200,
-    material: "Kashmiri Art & Quartz",
-    tag: "Artisanal",
-    description: "Hand-painted floral Kashmiri artisan watch with an adjustable band.",
-  },
-  {
-    id: "mp-1",
-    name: "Divine Krishna Morpankh Jewellery Set",
-    category: "Morpankh Set",
-    price: 1750,
-    material: "Real Peacock Feather & Gold",
-    tag: "Exclusive",
-    description: "Artisanal necklace and earring set incorporating genuine peacock feather motifs.",
-  },
-  {
-    id: "mt-1",
-    name: "Classic Maharashtrian Moti Choker Set",
-    category: "Moti Sets",
-    price: 2100,
-    material: "Woven Pearls & Red Beads",
-    tag: "Heritage",
-    description: "Multi-layered pearl strand necklace crafted in authentic Maharashtrian style.",
-  },
-  {
-    id: "md-1",
-    name: "Traditional Bridal Pearl Mundavalya",
-    category: "Mundavalya",
-    price: 490,
-    material: "Pearls & Golden Thread",
-    tag: "Bridal Essential",
-    description: "Handcrafted traditional headband ornament worn by Marathi brides and grooms.",
-  },
-];
-
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
@@ -242,10 +119,30 @@ const slideVariants: Variants = {
 
 export default function Home() {
   const { addToCart } = useCart();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Auto-slide every 3 seconds right-to-left
+  // Fetch dynamic products from Prisma API
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const res = await fetch("/api/products");
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(data);
+        }
+      } catch (err) {
+        console.error("Failed to load products from database:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProducts();
+  }, []);
+
+  // Auto-slide hero every 3 seconds
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
@@ -255,8 +152,8 @@ export default function Home() {
 
   const filteredProducts =
     selectedCategory === "All"
-      ? productsData
-      : productsData.filter((p) => p.category === selectedCategory);
+      ? products
+      : products.filter((p) => p.category === selectedCategory);
 
   return (
     <main className="min-h-screen bg-[#fcfbfa] text-[#072428] overflow-x-hidden font-serif">
@@ -286,13 +183,20 @@ export default function Home() {
               Discover exquisite handcrafted traditional and modern jewellery designs that celebrate every moment of your life.
             </p>
 
-            <div className="pt-2">
+            <div className="pt-2 flex flex-wrap gap-4">
               <a
                 href="#products"
                 className="inline-flex items-center space-x-3 px-8 py-3.5 bg-[#072428] text-amber-300 font-sans text-xs tracking-widest uppercase font-semibold rounded hover:bg-[#092b31] transition-all shadow-md"
               >
                 <span>EXPLORE COLLECTION</span>
                 <Palette className="w-4 h-4" />
+              </a>
+              <a
+                href="#craftsmanship-video"
+                className="inline-flex items-center space-x-2 px-6 py-3.5 border border-[#072428] text-[#072428] font-sans text-xs tracking-widest uppercase font-semibold rounded hover:bg-[#072428]/5 transition-all"
+              >
+                <Play className="w-3.5 h-3.5 fill-[#072428]" />
+                <span>WATCH PROCESS</span>
               </a>
             </div>
 
@@ -385,94 +289,143 @@ export default function Home() {
       {/* 4. Category Explorer Section */}
       <section id="products" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-8">
         <div className="text-center space-y-1">
-          <p className="text-amber-800 text-[10px] font-sans font-bold tracking-[0.2em] uppercase">SHOP BY CATEGORY</p>
-          <h2 className="text-3xl font-serif font-bold text-[#072428]">Explore Our Collections</h2>
+          <p className="text-amber-800 text-[10px] font-sans font-bold tracking-[0.2em] uppercase">
+            SHOP BY CATEGORY
+          </p>
+          <h2 className="text-3xl font-serif font-bold text-[#072428]">
+            Explore Our Collections
+          </h2>
         </div>
-{/* Category Pills - Increased Size */}
-<div className="flex flex-wrap justify-center gap-3 pt-4 pb-8 max-w-6xl mx-auto font-sans">
-  {categories.map((cat) => (
-    <button
-      key={cat}
-      onClick={() => setSelectedCategory(cat)}
-      className={`px-6 py-3 rounded-full text-sm font-medium tracking-wide transition-all border shadow-sm ${
-        selectedCategory === cat
-          ? "bg-[#072428] text-amber-300 font-semibold border-[#072428] shadow-md scale-105"
-          : "bg-white text-stone-700 border-stone-300 hover:border-amber-700 hover:text-amber-800"
-      }`}
-    >
-      {cat}
-    </button>
-  ))}
-</div>
+
+        {/* Category Pills */}
+        <div className="flex flex-wrap justify-center gap-3 pt-4 pb-8 max-w-6xl mx-auto font-sans">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-6 py-3 rounded-full text-sm font-medium tracking-wide transition-all border shadow-sm ${
+                selectedCategory === cat
+                  ? "bg-[#072428] text-amber-300 font-semibold border-[#072428] shadow-md scale-105"
+                  : "bg-white text-stone-700 border-stone-300 hover:border-amber-700 hover:text-amber-800"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
 
         {/* Product Grid */}
-        <motion.div
-          key={selectedCategory}
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
-        >
-          {filteredProducts.map((product) => (
-            <motion.div
-              key={product.id}
-              variants={cardVariants}
-              whileHover={{ y: -5 }}
-              className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between font-sans"
-            >
-              <div>
-                <div className="aspect-square bg-[#f8f6f2] relative flex items-center justify-center border-b border-stone-100 overflow-hidden">
-                  <span className="absolute top-3 left-3 px-2.5 py-1 bg-[#072428] text-amber-300 text-[10px] font-bold uppercase rounded z-20">
-                    {product.tag}
-                  </span>
+        {loading ? (
+          <div className="text-center py-20 font-sans text-stone-500">
+            Loading collections from database...
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="text-center py-16 font-sans text-stone-500">
+            No products found in this category.
+          </div>
+        ) : (
+          <motion.div
+            key={selectedCategory}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+          >
+            {filteredProducts.map((product) => (
+              <motion.div
+                key={product.id}
+                variants={cardVariants}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between font-sans"
+              >
+                <div>
+                  <div className="aspect-square bg-[#f8f6f2] relative flex items-center justify-center border-b border-stone-100 overflow-hidden">
+                    {product.tag && (
+                      <span className="absolute top-3 left-3 px-2.5 py-1 bg-[#072428] text-amber-300 text-[10px] font-bold uppercase rounded z-20">
+                        {product.tag}
+                      </span>
+                    )}
 
-                  {product.image ? (
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <p className="text-xs text-center text-stone-500 italic p-4 font-serif">
-                      [{product.name}]
+                    {product.image ? (
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className="object-cover hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <p className="text-xs text-center text-stone-500 italic p-4 font-serif">
+                        [{product.name}]
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="p-5 text-center space-y-1">
+                    <h3 className="font-serif font-semibold text-[#072428] text-sm leading-snug">
+                      {product.name}
+                    </h3>
+                    <p className="text-amber-800 font-bold text-sm">
+                      ₹{product.price.toLocaleString("en-IN")}
                     </p>
-                  )}
+                  </div>
                 </div>
 
-                <div className="p-5 text-center space-y-1">
-                  <h3 className="font-serif font-semibold text-[#072428] text-sm leading-snug">
-                    {product.name}
-                  </h3>
-                  <p className="text-amber-800 font-bold text-sm">
-                    ₹{product.price.toLocaleString("en-IN")}
-                  </p>
+                <div className="p-5 pt-0 space-y-2">
+                  <button
+                    onClick={() => addToCart(product)}
+                    className="w-full py-2.5 bg-[#072428] text-amber-300 text-xs font-semibold rounded hover:bg-[#092b31] transition-colors flex items-center justify-center space-x-2 uppercase tracking-wider"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    <span>ADD TO CART</span>
+                  </button>
+
+                  <Link
+                    href={`/products/${product.id}`}
+                    className="block text-center w-full py-2 border border-stone-300 text-stone-700 text-xs font-medium rounded hover:bg-stone-50 transition-colors uppercase tracking-wider"
+                  >
+                    View Details
+                  </Link>
                 </div>
-              </div>
-
-              <div className="p-5 pt-0 space-y-2">
-                <button
-                  onClick={() => addToCart(product)}
-                  className="w-full py-2.5 bg-[#072428] text-amber-300 text-xs font-semibold rounded hover:bg-[#092b31] transition-colors flex items-center justify-center space-x-2 uppercase tracking-wider"
-                >
-                  <ShoppingBag className="w-3.5 h-3.5" />
-                  <span>ADD TO CART</span>
-                </button>
-
-                <Link
-                  href={`/products/${product.id}`}
-                  className="block text-center w-full py-2 border border-stone-300 text-stone-700 text-xs font-medium rounded hover:bg-stone-50 transition-colors uppercase tracking-wider"
-                >
-                  View Details
-                </Link>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
       </section>
 
-      {/* 5. About Us Section */}
-      <section id="about" className="py-20 bg-gradient-to-b from-[#fcfbfa] to-[#f4efe8] border-y border-stone-200">
+      {/* 5. Craftsmanship Video Showcase Section */}
+      <section
+        id="craftsmanship-video"
+        className="py-20 bg-[#072428] text-white border-y border-amber-500/20"
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-3 mb-10">
+            <p className="text-amber-400 text-xs font-sans font-semibold tracking-[0.25em] uppercase">
+              BEHIND THE ARTISTRY
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-serif font-bold text-emerald-50">
+              The Making of Artisanal Elegance
+            </h2>
+            <p className="text-stone-300 text-sm max-w-xl mx-auto font-sans leading-relaxed">
+              Witness how every bead, pearl, and delicate strand comes together through meticulous handcrafting.
+            </p>
+          </div>
+
+          <div className="relative aspect-video max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl border border-amber-500/30 bg-black">
+            <video
+              className="w-full h-full object-cover"
+              controls
+              playsInline
+              poster="/hero-jewelry.jpg"
+            >
+              <source src="/craftsmanship.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. About Us Section */}
+      <section id="about" className="py-20 bg-gradient-to-b from-[#fcfbfa] to-[#f4efe8] border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div className="relative aspect-square max-w-md mx-auto w-full rounded-3xl overflow-hidden shadow-2xl border-2 border-amber-500/20">
@@ -498,7 +451,7 @@ export default function Home() {
               <p className="text-stone-600 text-sm font-sans leading-relaxed">
                 We believe luxury should be personal and accessible. Whether you seek custom wedding ornaments or bridal rental sets, we curate timeless beauty tailored uniquely for you.
               </p>
-              
+
               <div className="pt-2 flex items-center space-x-6 font-sans">
                 <div>
                   <p className="text-2xl font-serif font-bold text-[#072428]">500+</p>
@@ -520,7 +473,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6. Customer Reviews Section */}
+      {/* 7. Customer Reviews Section */}
       <section id="reviews" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         <div className="text-center space-y-2">
           <p className="text-amber-800 text-[10px] font-sans font-bold tracking-[0.2em] uppercase">
@@ -535,7 +488,6 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-sans">
-          {/* Review 1 */}
           <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex space-x-1 text-amber-500">
@@ -553,7 +505,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Review 2 */}
           <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex space-x-1 text-amber-500">
@@ -571,7 +522,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Review 3 */}
           <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex space-x-1 text-amber-500">
@@ -591,7 +541,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 7. Footer */}
+      {/* 8. Footer */}
       <footer className="bg-[#04191c] text-emerald-200/60 py-12 border-t border-amber-500/20 text-center text-sm space-y-3 font-sans">
         <p className="text-white font-serif text-lg font-bold tracking-widest uppercase">
           AR CREATIONNS
