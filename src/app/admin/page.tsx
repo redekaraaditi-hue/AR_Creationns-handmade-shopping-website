@@ -11,6 +11,7 @@ import {
   Zap,
   Trash2,
   Edit,
+  Star,
 } from "lucide-react";
 import {
   LineChart,
@@ -34,6 +35,8 @@ interface ProductItem {
   image: string;
   description: string;
   tag?: string | null;
+  rating?: number | null;
+  reviewsCount?: number | null;
   inStock: boolean;
 }
 
@@ -72,11 +75,14 @@ export default function AdminDashboard() {
     id: "",
     name: "",
     category: "Necklace",
+    customCategory: "",
     price: "",
     material: "Traditional Brass / Gold Polish",
     image: "",
     description: "",
     tag: "Bestseller",
+    rating: "4.8",
+    reviewsCount: "12",
     inStock: true,
   });
   const [isEditing, setIsEditing] = useState(false);
@@ -126,6 +132,17 @@ export default function AdminDashboard() {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingProduct(true);
+
+    const finalCategory =
+      formData.category === "CUSTOM"
+        ? formData.customCategory || "Jewellery"
+        : formData.category;
+
+    const payload = {
+      ...formData,
+      category: finalCategory,
+    };
+
     try {
       const url = isEditing
         ? `/api/admin/products/${formData.id}`
@@ -135,7 +152,7 @@ export default function AdminDashboard() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -143,11 +160,14 @@ export default function AdminDashboard() {
           id: "",
           name: "",
           category: "Necklace",
+          customCategory: "",
           price: "",
           material: "Traditional Brass / Gold Polish",
           image: "",
           description: "",
           tag: "Bestseller",
+          rating: "4.8",
+          reviewsCount: "12",
           inStock: true,
         });
         setIsEditing(false);
@@ -160,15 +180,21 @@ export default function AdminDashboard() {
   };
 
   const handleEditClick = (p: ProductItem) => {
+    const standardCategories = ["Necklace", "Choker", "Earrings", "Bangles", "Bridal Set", "Watch"];
+    const isCustom = !standardCategories.includes(p.category);
+
     setFormData({
       id: p.id,
       name: p.name,
-      category: p.category,
+      category: isCustom ? "CUSTOM" : p.category,
+      customCategory: isCustom ? p.category : "",
       price: String(p.price),
-      material: p.material,
-      image: p.image,
-      description: p.description,
+      material: p.material || "",
+      image: p.image || "",
+      description: p.description || "",
       tag: p.tag || "",
+      rating: p.rating ? String(p.rating) : "4.8",
+      reviewsCount: p.reviewsCount ? String(p.reviewsCount) : "12",
       inStock: p.inStock,
     });
     setIsEditing(true);
@@ -234,7 +260,7 @@ export default function AdminDashboard() {
                 : "text-stone-700 hover:bg-stone-200"
             }`}
           >
-            💎 Jewelry Inventory & Photos ({products.length})
+            💎 Jewelry Inventory & Reviews ({products.length})
           </button>
         </div>
       </div>
@@ -376,7 +402,7 @@ export default function AdminDashboard() {
             </div>
           </>
         ) : (
-          /* Products Inventory & Photos Tab */
+          /* Products Inventory & Reviews Tab */
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm h-fit">
               <h2 className="font-serif font-bold text-lg mb-4 text-[#072428]">
@@ -419,19 +445,72 @@ export default function AdminDashboard() {
                       <option value="Earrings">Earrings</option>
                       <option value="Bangles">Bangles</option>
                       <option value="Bridal Set">Bridal Set</option>
+                      <option value="Watch">Watch</option>
+                      <option value="CUSTOM">+ Add New / Custom Category</option>
                     </select>
                   </div>
                 </div>
 
+                {/* If Custom Category is Selected */}
+                {formData.category === "CUSTOM" && (
+                  <div>
+                    <label className="font-semibold block mb-1 text-emerald-800">
+                      Enter Custom Category Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.customCategory}
+                      onChange={(e) =>
+                        setFormData({ ...formData, customCategory: e.target.value })
+                      }
+                      className="w-full p-2.5 border border-emerald-500 bg-emerald-50/40 rounded-lg"
+                      placeholder="e.g. Mangalsutra, Payal, Rings"
+                    />
+                  </div>
+                )}
+
                 <div>
-                  <label className="font-semibold block mb-1">Photo Image URL</label>
+                  <label className="font-semibold block mb-1">Photo Image URL / Local Path</label>
                   <input
-                    type="url"
+                    type="text"
                     value={formData.image}
                     onChange={(e) => setFormData({ ...formData, image: e.target.value })}
                     className="w-full p-2.5 border rounded-lg"
-                    placeholder="https://images.unsplash.com/... or image link"
+                    placeholder="/watch.jpg or https://i.ibb.co/..."
                   />
+                  <p className="text-[10px] text-stone-400 mt-1">
+                    Paste an image URL from ImgBB or a local path like <span className="font-mono">/your-image.jpg</span> placed in <span className="font-mono">public/</span>.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-semibold block mb-1">Rating (out of 5)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="1"
+                      max="5"
+                      value={formData.rating}
+                      onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
+                      className="w-full p-2.5 border rounded-lg"
+                      placeholder="4.9"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-semibold block mb-1">Reviews Count</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.reviewsCount}
+                      onChange={(e) =>
+                        setFormData({ ...formData, reviewsCount: e.target.value })
+                      }
+                      className="w-full p-2.5 border rounded-lg"
+                      placeholder="18"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -484,11 +563,14 @@ export default function AdminDashboard() {
                           id: "",
                           name: "",
                           category: "Necklace",
+                          customCategory: "",
                           price: "",
                           material: "Traditional Brass / Gold Polish",
                           image: "",
                           description: "",
                           tag: "Bestseller",
+                          rating: "4.8",
+                          reviewsCount: "12",
                           inStock: true,
                         });
                       }}
@@ -503,7 +585,7 @@ export default function AdminDashboard() {
 
             <div className="lg:col-span-2 bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
               <div className="p-5 border-b border-stone-100 font-serif font-bold text-lg text-[#072428]">
-                Current Jewelry Catalog
+                Current Jewelry Catalog & Ratings
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-stone-700">
@@ -511,6 +593,8 @@ export default function AdminDashboard() {
                     <tr>
                       <th className="px-4 py-3">Photo</th>
                       <th className="px-4 py-3">Title & Material</th>
+                      <th className="px-4 py-3">Category</th>
+                      <th className="px-4 py-3">Rating</th>
                       <th className="px-4 py-3">Price</th>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3 text-right">Actions</th>
@@ -521,14 +605,28 @@ export default function AdminDashboard() {
                       <tr key={p.id} className="hover:bg-stone-50">
                         <td className="px-4 py-3">
                           <img
-                            src={p.image || "https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?q=80&w=800&auto=format&fit=crop"}
+                            src={p.image || "/placeholder.jpg"}
                             alt={p.name}
                             className="w-12 h-12 rounded-lg object-cover border"
                           />
                         </td>
                         <td className="px-4 py-3">
                           <span className="font-bold text-stone-900 block">{p.name}</span>
-                          <span className="text-[10px] text-stone-400">{p.category} • {p.material}</span>
+                          <span className="text-[10px] text-stone-400">{p.material}</span>
+                        </td>
+                        <td className="px-4 py-3 font-medium">
+                          <span className="bg-stone-100 px-2 py-0.5 rounded text-stone-700">
+                            {p.category}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center space-x-1 text-amber-600 font-bold">
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            <span>{p.rating || 4.8}</span>
+                            <span className="text-[10px] text-stone-400 font-normal">
+                              ({p.reviewsCount || 0})
+                            </span>
+                          </div>
                         </td>
                         <td className="px-4 py-3 font-bold font-serif text-stone-900">₹{p.price}</td>
                         <td className="px-4 py-3">

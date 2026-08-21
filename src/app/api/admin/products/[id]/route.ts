@@ -8,16 +8,30 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, category, price, material, image, description, tag, inStock } = body;
+    const {
+      name,
+      category,
+      price,
+      material,
+      image,
+      description,
+      tag,
+      rating,
+      reviewsCount,
+      inStock,
+    } = body;
 
     const data: any = {};
     if (name !== undefined) data.name = name;
-    if (category !== undefined) data.category = category;
+    if (category !== undefined) data.category = category.trim();
     if (price !== undefined) data.price = parseFloat(price);
     if (material !== undefined) data.material = material;
     if (image !== undefined) data.image = image;
     if (description !== undefined) data.description = description;
     if (tag !== undefined) data.tag = tag;
+    if (rating !== undefined && rating !== "") data.rating = parseFloat(rating);
+    if (reviewsCount !== undefined && reviewsCount !== "")
+      data.reviewsCount = parseInt(reviewsCount);
     if (inStock !== undefined) data.inStock = Boolean(inStock);
 
     const updated = await prisma.product.update({

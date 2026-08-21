@@ -7,18 +7,20 @@ generator client {
 }
 
 model Product {
-  id          String      @id @default(uuid())
-  name        String
-  category    String
-  price       Float
-  material    String
-  tag         String?
-  image       String
-  description String
-  inStock     Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  orderItems  OrderItem[]
+  id           String      @id @default(cuid())
+  name         String
+  category     String
+  price        Float
+  material     String?
+  image        String?
+  description  String?
+  tag          String?
+  rating       Float?      @default(4.8)
+  reviewsCount Int?        @default(12)
+  inStock      Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  orderItems   OrderItem[]
 }
 
 model Order {

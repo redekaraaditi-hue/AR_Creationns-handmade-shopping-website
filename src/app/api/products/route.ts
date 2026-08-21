@@ -1,42 +1,62 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET: Fetch all jewelry products
 export async function GET() {
   try {
     const products = await prisma.product.findMany({
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(products);
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to fetch products" },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// POST: Add a new product (Admin)
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const {
+      name,
+      category,
+      price,
+      material,
+      image,
+      description,
+      tag,
+      rating,
+      reviewsCount,
+      inStock,
+    } = body;
+
+    if (!name || !category || price === undefined) {
+      return NextResponse.json(
+        { error: "Product name, category, and price are required." },
+        { status: 400 }
+      );
+    }
+
     const product = await prisma.product.create({
       data: {
-        name: body.name,
-        category: body.category,
-        price: parseFloat(body.price),
-        material: body.material,
-        tag: body.tag,
-        image: body.image,
-        description: body.description,
-        inStock: body.inStock ?? true,
+        name,
+        category: category.trim(),
+        price: parseFloat(price),
+        material: material || "Traditional Handcrafted",
+        image:
+          image ||
+          "https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?q=80&w=800&auto=format&fit=crop",
+        description: description || "Authentic handcrafted jewellery by Aaditi.",
+        tag: tag || null,
+        rating: rating !== undefined && rating !== "" ? parseFloat(rating) : 4.8,
+        reviewsCount:
+          reviewsCount !== undefined && reviewsCount !== ""
+            ? parseInt(reviewsCount)
+            : 10,
+        inStock: inStock !== undefined ? Boolean(inStock) : true,
       },
     });
-    return NextResponse.json(product, { status: 201 });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to create product" },
-      { status: 500 }
-    );
+
+    return NextResponse.json({ success: true, product }, { status: 201 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
