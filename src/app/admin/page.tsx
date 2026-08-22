@@ -22,7 +22,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 
@@ -101,7 +100,7 @@ export default function AdminDashboard() {
       if (chartRes.ok) setChartData(await chartRes.json());
       if (productsRes.ok) setProducts(await productsRes.json());
     } catch (err) {
-      console.error("Failed to load data:", err);
+      console.error("Failed to load admin data:", err);
     } finally {
       setLoading(false);
     }
@@ -135,7 +134,7 @@ export default function AdminDashboard() {
 
     const finalCategory =
       formData.category === "CUSTOM"
-        ? formData.customCategory || "Jewellery"
+        ? formData.customCategory.trim() || "Jewellery"
         : formData.category;
 
     const payload = {
@@ -155,25 +154,36 @@ export default function AdminDashboard() {
         body: JSON.stringify(payload),
       });
 
-      if (res.ok) {
-        setFormData({
-          id: "",
-          name: "",
-          category: "Necklace",
-          customCategory: "",
-          price: "",
-          material: "Traditional Brass / Gold Polish",
-          image: "",
-          description: "",
-          tag: "Bestseller",
-          rating: "4.8",
-          reviewsCount: "12",
-          inStock: true,
-        });
-        setIsEditing(false);
-        const updated = await (await fetch("/api/admin/products")).json();
-        setProducts(updated);
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(`Error saving product: ${data.error || "Unknown server error"}`);
+        return;
       }
+
+      setFormData({
+        id: "",
+        name: "",
+        category: "Necklace",
+        customCategory: "",
+        price: "",
+        material: "Traditional Brass / Gold Polish",
+        image: "",
+        description: "",
+        tag: "Bestseller",
+        rating: "4.8",
+        reviewsCount: "12",
+        inStock: true,
+      });
+      setIsEditing(false);
+
+      const prodsRes = await fetch("/api/admin/products");
+      if (prodsRes.ok) {
+        setProducts(await prodsRes.json());
+      }
+    } catch (err: any) {
+      console.error("Save product failed:", err);
+      alert("Failed to reach server.");
     } finally {
       setSavingProduct(false);
     }
@@ -200,7 +210,7 @@ export default function AdminDashboard() {
     setIsEditing(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
+  
   const handleDeleteProduct = async (id: string) => {
     if (!confirm("Are you sure you want to delete this jewelry item?")) return;
     const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
@@ -239,7 +249,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      {/* Main Tab Navigation Buttons */}
+      {/* Tabs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <div className="flex space-x-3 bg-stone-200/60 p-1.5 rounded-2xl w-fit border border-stone-300">
           <button
@@ -272,7 +282,7 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-stone-500 font-semibold uppercase">Total Revenue</p>
+                  <p className="text-xs text-stone-500 font-semibold uppercase tracking-wider">Total Revenue</p>
                   <p className="text-3xl font-bold text-[#072428] mt-1 font-serif">₹{totalRevenue.toLocaleString("en-IN")}</p>
                 </div>
                 <div className="w-14 h-14 bg-amber-50 text-amber-800 rounded-xl flex items-center justify-center">
@@ -282,7 +292,7 @@ export default function AdminDashboard() {
 
               <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-stone-500 font-semibold uppercase">Total Bookings</p>
+                  <p className="text-xs text-stone-500 font-semibold uppercase tracking-wider">Total Bookings</p>
                   <p className="text-3xl font-bold text-[#072428] mt-1 font-serif">{orders.length}</p>
                 </div>
                 <div className="w-14 h-14 bg-blue-50 text-blue-800 rounded-xl flex items-center justify-center">
@@ -292,7 +302,7 @@ export default function AdminDashboard() {
 
               <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-stone-500 font-semibold uppercase">Orders Pending</p>
+                  <p className="text-xs text-stone-500 font-semibold uppercase tracking-wider">Orders Pending</p>
                   <p className="text-3xl font-bold text-amber-700 mt-1 font-serif">{pendingOrders}</p>
                 </div>
                 <div className="w-14 h-14 bg-amber-50 text-amber-700 rounded-xl flex items-center justify-center">
@@ -302,7 +312,7 @@ export default function AdminDashboard() {
 
               <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-stone-500 font-semibold uppercase">Fulfilled Orders</p>
+                  <p className="text-xs text-stone-500 font-semibold uppercase tracking-wider">Fulfilled Orders</p>
                   <p className="text-3xl font-bold text-emerald-700 mt-1 font-serif">{completedOrders}</p>
                 </div>
                 <div className="w-14 h-14 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center">
@@ -318,7 +328,7 @@ export default function AdminDashboard() {
                   <Zap className="w-6 h-6 text-emerald-700" />
                   <div>
                     <h3 className="font-serif font-bold text-lg text-[#072428]">Monthly Business Volume</h3>
-                    <p className="text-xs text-stone-500">Total income trend for orders this year.</p>
+                    <p className="text-xs text-stone-500">Total revenue generated per month.</p>
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={260}>
@@ -337,7 +347,7 @@ export default function AdminDashboard() {
                   <ShoppingBag className="w-6 h-6 text-amber-800" />
                   <div>
                     <h3 className="font-serif font-bold text-lg text-[#072428]">Order Frequency</h3>
-                    <p className="text-xs text-stone-500">Number of placed orders per month.</p>
+                    <p className="text-xs text-stone-500">Number of received orders per month.</p>
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={260}>
@@ -355,37 +365,65 @@ export default function AdminDashboard() {
             {/* Orders Table */}
             <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
               <div className="p-5 border-b border-stone-100 font-serif font-bold text-lg text-[#072428]">
-                Recent Customer Orders
+                Customer Orders Pipeline
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-stone-700">
                   <thead className="bg-stone-50 text-stone-500 uppercase font-semibold">
                     <tr>
-                      <th className="px-5 py-3">Order ID & Date</th>
-                      <th className="px-5 py-3">Customer</th>
-                      <th className="px-5 py-3">Shipping Destination</th>
-                      <th className="px-5 py-3">Total Amount</th>
-                      <th className="px-5 py-3 text-center">Status Action</th>
+                      <th className="px-5 py-3.5">Order ID & Date</th>
+                      <th className="px-5 py-3.5">Customer</th>
+                      <th className="px-5 py-3.5">Destination</th>
+                      <th className="px-5 py-3.5">Total Amount</th>
+                      <th className="px-5 py-3.5 text-center">Status Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
                     {orders.map((o) => (
                       <tr key={o.id} className="hover:bg-stone-50/70">
-                        <td className="px-5 py-3 font-mono font-bold text-[#072428]">{o.orderNumber}</td>
-                        <td className="px-5 py-3">
+                        <td className="px-5 py-3.5">
+                          <span className="font-mono font-bold text-[#072428] block">{o.orderNumber}</span>
+                          <span className="text-[11px] text-stone-400">
+                            {new Date(o.createdAt).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5">
                           <span className="font-semibold text-stone-900 block">{o.customerName}</span>
-                          <a href={`https://wa.me/${o.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer" className="text-emerald-700 font-medium hover:underline block mt-0.5">
-                            📱 {o.phone}
+                          <a
+                            href={`https://wa.me/${o.phone.replace(/[^0-9]/g, "")}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-emerald-700 font-medium hover:underline inline-flex items-center space-x-1 mt-0.5"
+                          >
+                            <span>📱 {o.phone}</span>
                           </a>
                         </td>
-                        <td className="px-5 py-3 max-w-xs text-stone-600 truncate">{o.address}, {o.city} - {o.pincode}</td>
-                        <td className="px-5 py-3 font-bold font-serif">₹{o.totalAmount.toLocaleString("en-IN")}</td>
-                        <td className="px-5 py-3 text-center">
+                        <td className="px-5 py-3.5 max-w-xs text-stone-600 truncate">
+                          {o.address}, {o.city} - {o.pincode}
+                        </td>
+                        <td className="px-5 py-3.5 font-bold font-serif text-stone-900 text-sm">
+                          ₹{o.totalAmount.toLocaleString("en-IN")}
+                        </td>
+                        <td className="px-5 py-3.5 text-center">
                           <select
                             value={o.status}
                             disabled={updatingId === o.id}
                             onChange={(e) => handleStatusChange(o.id, e.target.value)}
-                            className="text-[11px] font-semibold rounded-lg px-2.5 py-1.5 border"
+                            className={`text-[11px] font-semibold rounded-lg px-2.5 py-1.5 border shadow-sm outline-none transition-all ${
+                              o.status === "delivered"
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                                : o.status === "shipped"
+                                ? "bg-blue-50 text-blue-800 border-blue-300"
+                                : o.status === "confirmed"
+                                ? "bg-purple-50 text-purple-800 border-purple-300"
+                                : o.status === "cancelled"
+                                ? "bg-red-50 text-red-800 border-red-300"
+                                : "bg-amber-50 text-amber-800 border-amber-300"
+                            }`}
                           >
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
@@ -402,7 +440,7 @@ export default function AdminDashboard() {
             </div>
           </>
         ) : (
-          /* Products Inventory & Reviews Tab */
+          /* Inventory & Review Editing Tab */
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm h-fit">
               <h2 className="font-serif font-bold text-lg mb-4 text-[#072428]">
@@ -417,7 +455,7 @@ export default function AdminDashboard() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full p-2.5 border rounded-lg"
-                    placeholder="e.g. Traditional Kolhapuri Saaj"
+                    placeholder="e.g. Kashmiri Watch"
                   />
                 </div>
 
@@ -430,7 +468,7 @@ export default function AdminDashboard() {
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                       className="w-full p-2.5 border rounded-lg"
-                      placeholder="1850"
+                      placeholder="370"
                     />
                   </div>
                   <div>
@@ -451,21 +489,16 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* If Custom Category is Selected */}
                 {formData.category === "CUSTOM" && (
                   <div>
-                    <label className="font-semibold block mb-1 text-emerald-800">
-                      Enter Custom Category Name
-                    </label>
+                    <label className="font-semibold block mb-1 text-emerald-800">Custom Category Name</label>
                     <input
                       type="text"
                       required
                       value={formData.customCategory}
-                      onChange={(e) =>
-                        setFormData({ ...formData, customCategory: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, customCategory: e.target.value })}
                       className="w-full p-2.5 border border-emerald-500 bg-emerald-50/40 rounded-lg"
-                      placeholder="e.g. Mangalsutra, Payal, Rings"
+                      placeholder="e.g. Payal, Mangalsutra"
                     />
                   </div>
                 )}
@@ -477,11 +510,8 @@ export default function AdminDashboard() {
                     value={formData.image}
                     onChange={(e) => setFormData({ ...formData, image: e.target.value })}
                     className="w-full p-2.5 border rounded-lg"
-                    placeholder="/watch.jpg or https://i.ibb.co/..."
+                    placeholder="https://i.ibb.co/... or /watch.jpg"
                   />
-                  <p className="text-[10px] text-stone-400 mt-1">
-                    Paste an image URL from ImgBB or a local path like <span className="font-mono">/your-image.jpg</span> placed in <span className="font-mono">public/</span>.
-                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -495,7 +525,6 @@ export default function AdminDashboard() {
                       value={formData.rating}
                       onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
                       className="w-full p-2.5 border rounded-lg"
-                      placeholder="4.9"
                     />
                   </div>
                   <div>
@@ -504,11 +533,8 @@ export default function AdminDashboard() {
                       type="number"
                       min="0"
                       value={formData.reviewsCount}
-                      onChange={(e) =>
-                        setFormData({ ...formData, reviewsCount: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, reviewsCount: e.target.value })}
                       className="w-full p-2.5 border rounded-lg"
-                      placeholder="18"
                     />
                   </div>
                 </div>
@@ -520,7 +546,7 @@ export default function AdminDashboard() {
                     value={formData.material}
                     onChange={(e) => setFormData({ ...formData, material: e.target.value })}
                     className="w-full p-2.5 border rounded-lg"
-                    placeholder="e.g. Micron Gold Plated Brass"
+                    placeholder="e.g. Traditional Brass / Polish"
                   />
                 </div>
 
@@ -531,7 +557,7 @@ export default function AdminDashboard() {
                     value={formData.tag}
                     onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
                     className="w-full p-2.5 border rounded-lg"
-                    placeholder="e.g. Bestseller, Festive Special"
+                    placeholder="e.g. Trending, Bestseller"
                   />
                 </div>
 
@@ -541,7 +567,7 @@ export default function AdminDashboard() {
                     id="inStock"
                     checked={formData.inStock}
                     onChange={(e) => setFormData({ ...formData, inStock: e.target.checked })}
-                    className="w-4 h-4 rounded text-emerald-600"
+                    className="w-4 h-4 text-emerald-600 rounded"
                   />
                   <label htmlFor="inStock" className="font-semibold cursor-pointer">In Stock & Available</label>
                 </div>
@@ -605,7 +631,7 @@ export default function AdminDashboard() {
                       <tr key={p.id} className="hover:bg-stone-50">
                         <td className="px-4 py-3">
                           <img
-                            src={p.image || "/placeholder.jpg"}
+                            src={p.image || "https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?q=80&w=800&auto=format&fit=crop"}
                             alt={p.name}
                             className="w-12 h-12 rounded-lg object-cover border"
                           />
@@ -615,17 +641,13 @@ export default function AdminDashboard() {
                           <span className="text-[10px] text-stone-400">{p.material}</span>
                         </td>
                         <td className="px-4 py-3 font-medium">
-                          <span className="bg-stone-100 px-2 py-0.5 rounded text-stone-700">
-                            {p.category}
-                          </span>
+                          <span className="bg-stone-100 px-2 py-0.5 rounded text-stone-700">{p.category}</span>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center space-x-1 text-amber-600 font-bold">
                             <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                             <span>{p.rating || 4.8}</span>
-                            <span className="text-[10px] text-stone-400 font-normal">
-                              ({p.reviewsCount || 0})
-                            </span>
+                            <span className="text-[10px] text-stone-400 font-normal">({p.reviewsCount || 0})</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 font-bold font-serif text-stone-900">₹{p.price}</td>
@@ -635,18 +657,10 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right space-x-2">
-                          <button
-                            onClick={() => handleEditClick(p)}
-                            className="p-1.5 bg-stone-100 hover:bg-stone-200 rounded text-stone-700"
-                            title="Edit"
-                          >
+                          <button onClick={() => handleEditClick(p)} className="p-1.5 bg-stone-100 hover:bg-stone-200 rounded text-stone-700">
                             <Edit className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={() => handleDeleteProduct(p.id)}
-                            className="p-1.5 bg-red-50 hover:bg-red-100 rounded text-red-600"
-                            title="Delete"
-                          >
+                          <button onClick={() => handleDeleteProduct(p.id)} className="p-1.5 bg-red-50 hover:bg-red-100 rounded text-red-600">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </td>

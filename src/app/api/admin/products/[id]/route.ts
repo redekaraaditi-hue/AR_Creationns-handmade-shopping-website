@@ -21,10 +21,10 @@ export async function PATCH(
       inStock,
     } = body;
 
-    const data: any = {};
-    if (name !== undefined) data.name = name;
-    if (category !== undefined) data.category = category.trim();
-    if (price !== undefined) data.price = parseFloat(price);
+    const data: Record<string, any> = {};
+    if (name !== undefined) data.name = String(name).trim();
+    if (category !== undefined) data.category = String(category).trim();
+    if (price !== undefined && price !== "") data.price = parseFloat(price);
     if (material !== undefined) data.material = material;
     if (image !== undefined) data.image = image;
     if (description !== undefined) data.description = description;
@@ -41,6 +41,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, product: updated });
   } catch (error: any) {
+    console.error("Prisma product update error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -54,6 +55,7 @@ export async function DELETE(
     await prisma.product.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error("Prisma product delete error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

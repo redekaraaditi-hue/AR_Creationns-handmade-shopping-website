@@ -9,7 +9,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "**", // Allows any external image URL (Supabase, Unsplash, Cloudinary, etc.)
+        hostname: "i.ibb.co",
+      },
+      {
+        protocol: "https",
+        hostname: "ibb.co",
       },
     ],
   },
